@@ -145,7 +145,7 @@ python -m wallbreaker.cli run "oppo母亲节文案塌房事件" --source-file so
 
 ## 8. 后续路线
 
-1. 已接入搜索 API 适配层：Bing、Serper、DuckDuckGo HTML fallback。
+1. 已接入搜索 API 适配层：Bing、Serper、Brave、Tavily、DuckDuckGo HTML fallback、Bing HTML fallback、Baidu HTML fallback。
 2. 当前自动检索采用站点定向查询，还原事实骨架和多平台舆论切片。
 3. 下一步增加 Playwright 登录态深爬、截图和 OCR 入库。
 4. 增加 Web UI，让用户先确认事件档案，再进入文案生成。

@@ -91,12 +91,16 @@ python -m wallbreaker.cli run "oppo母亲节文案塌房事件" --source-file so
 
 ## 自动检索
 
-项目支持通过搜索 API 自动还原事件事实骨架。推荐先配置 Bing Web Search API 或 Serper：
+项目支持通过搜索 API 自动还原事件事实骨架。推荐优先配置 Tavily 或 Brave；Bing、Serper 也支持：
 
 ```text
 BING_SEARCH_API_KEY=你的 Bing Search Key
 # 或
 SERPER_API_KEY=你的 Serper Key
+# 或
+BRAVE_SEARCH_API_KEY=你的 Brave Search Key
+# 或
+TAVILY_API_KEY=你的 Tavily Key
 ```
 
 运行：
@@ -104,6 +108,20 @@ SERPER_API_KEY=你的 Serper Key
 ```powershell
 python -m wallbreaker.cli run "oppo母亲节文案塌房事件" --real-search --per-source-limit 3
 ```
+
+如果暂时没有任何搜索 API Key，可以先用无 Key 的 HTML 搜索后备：
+
+```powershell
+python -m wallbreaker.cli run "oppo母亲节文案塌房事件" --real-search --search-provider baidu_html --per-source-limit 3
+```
+
+或：
+
+```powershell
+python -m wallbreaker.cli run "oppo母亲节文案塌房事件" --real-search --search-provider bing_html --per-source-limit 3
+```
+
+HTML 后备可能被搜索引擎风控，稳定性不如 API。
 
 系统会自动检索：
 

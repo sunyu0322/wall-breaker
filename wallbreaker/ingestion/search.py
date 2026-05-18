@@ -46,13 +46,30 @@ class BingSearchProvider:
             data = json.loads(response.read().decode("utf-8"))
         rows = data.get("webPages", {}).get("value", [])
         return [
-            SearchHit(
-                title=row.get("name", ""),
-                url=row.get("url", ""),
-                snippet=row.get("snippet", ""),
-                provider=self.name,
-                rank=index + 1,
-            )
+            SearchHit(row.get("name", ""), row.get("url", ""), row.get("snippet", ""), self.name, index + 1)
+            for index, row in enumerate(rows[:limit])
+            if row.get("url")
+        ]
+
+
+class BraveSearchProvider:
+    name = "brave"
+
+    def __init__(self, api_key: str, endpoint: str = "https://api.search.brave.com/res/v1/web/search") -> None:
+        self.api_key = api_key
+        self.endpoint = endpoint
+
+    def search(self, query: str, limit: int) -> list[SearchHit]:
+        params = urllib.parse.urlencode({"q": query, "count": min(limit, 10), "country": "cn", "search_lang": "zh-hans"})
+        request = urllib.request.Request(
+            f"{self.endpoint}?{params}",
+            headers={"X-Subscription-Token": self.api_key, "Accept": "application/json"},
+        )
+        with urllib.request.urlopen(request, timeout=30) as response:
+            data = json.loads(response.read().decode("utf-8"))
+        rows = data.get("web", {}).get("results", [])
+        return [
+            SearchHit(row.get("title", ""), row.get("url", ""), row.get("description", ""), self.name, index + 1)
             for index, row in enumerate(rows[:limit])
             if row.get("url")
         ]
@@ -77,16 +94,81 @@ class SerperSearchProvider:
             data = json.loads(response.read().decode("utf-8"))
         rows = data.get("organic", [])
         return [
-            SearchHit(
-                title=row.get("title", ""),
-                url=row.get("link", ""),
-                snippet=row.get("snippet", ""),
-                provider=self.name,
-                rank=index + 1,
-            )
+            SearchHit(row.get("title", ""), row.get("link", ""), row.get("snippet", ""), self.name, index + 1)
             for index, row in enumerate(rows[:limit])
             if row.get("link")
         ]
+
+
+class TavilySearchProvider:
+    name = "tavily"
+
+    def __init__(self, api_key: str, endpoint: str = "https://api.tavily.com/search") -> None:
+        self.api_key = api_key
+        self.endpoint = endpoint
+
+    def search(self, query: str, limit: int) -> list[SearchHit]:
+        payload = json.dumps(
+            {
+                "query": query,
+                "max_results": min(limit, 10),
+                "search_depth": "basic",
+                "include_raw_content": "text",
+            }
+        ).encode("utf-8")
+        request = urllib.request.Request(
+            self.endpoint,
+            data=payload,
+            headers={"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(request, timeout=45) as response:
+            data = json.loads(response.read().decode("utf-8"))
+        rows = data.get("results", [])
+        return [
+            SearchHit(
+                row.get("title", ""),
+                row.get("url", ""),
+                row.get("content") or row.get("raw_content") or "",
+                self.name,
+                index + 1,
+            )
+            for index, row in enumerate(rows[:limit])
+            if row.get("url")
+        ]
+
+
+class BingHtmlProvider:
+    name = "bing_html"
+
+    def search(self, query: str, limit: int) -> list[SearchHit]:
+        params = urllib.parse.urlencode({"q": query, "mkt": "zh-CN"})
+        page = _request_text(f"https://www.bing.com/search?{params}", timeout=30)
+        rows = re.findall(r'<li class="b_algo".*?<a href="(.*?)".*?>(.*?)</a>.*?<p>(.*?)</p>', page, flags=re.S)
+        return [
+            SearchHit(_strip_html(title), html.unescape(url), _strip_html(snippet), self.name, index + 1)
+            for index, (url, title, snippet) in enumerate(rows[:limit])
+            if url.startswith("http")
+        ]
+
+
+class BaiduHtmlProvider:
+    name = "baidu_html"
+
+    def search(self, query: str, limit: int) -> list[SearchHit]:
+        params = urllib.parse.urlencode({"wd": query, "rn": min(limit, 10)})
+        page = _request_text(f"https://www.baidu.com/s?{params}", timeout=30)
+        blocks = re.findall(r'<div[^>]+class="[^"]*result[^"]*"[^>]*>(.*?)</div>\s*</div>', page, flags=re.S)
+        hits: list[SearchHit] = []
+        for block in blocks:
+            link_match = re.search(r'<a[^>]+href="(http.*?)"[^>]*>(.*?)</a>', block, flags=re.S)
+            if not link_match:
+                continue
+            snippet = _strip_html(block)
+            hits.append(SearchHit(_strip_html(link_match.group(2)), html.unescape(link_match.group(1)), snippet, self.name, len(hits) + 1))
+            if len(hits) >= limit:
+                break
+        return hits
 
 
 class DuckDuckGoHtmlProvider:
@@ -94,12 +176,7 @@ class DuckDuckGoHtmlProvider:
 
     def search(self, query: str, limit: int) -> list[SearchHit]:
         params = urllib.parse.urlencode({"q": query, "kl": "cn-zh"})
-        request = urllib.request.Request(
-            f"https://duckduckgo.com/html/?{params}",
-            headers={"User-Agent": "Mozilla/5.0 WallBreaker/0.1"},
-        )
-        with urllib.request.urlopen(request, timeout=30) as response:
-            page = response.read().decode("utf-8", errors="replace")
+        page = _request_text(f"https://duckduckgo.com/html/?{params}", timeout=30)
         rows = re.findall(
             r'<a rel="nofollow" class="result__a" href="(?P<url>.*?)".*?>(?P<title>.*?)</a>.*?'
             r'<a class="result__snippet".*?>(?P<snippet>.*?)</a>',
@@ -108,18 +185,10 @@ class DuckDuckGoHtmlProvider:
         )
         hits: list[SearchHit] = []
         for index, row in enumerate(rows[:limit]):
-            url = html.unescape(re.sub(r"^//duckduckgo.com/l/\?uddg=", "", row[0]))
+            url = html.unescape(row[0])
             if "uddg=" in url:
                 url = urllib.parse.parse_qs(urllib.parse.urlparse(url).query).get("uddg", [url])[0]
-            hits.append(
-                SearchHit(
-                    title=_strip_html(row[1]),
-                    url=urllib.parse.unquote(url),
-                    snippet=_strip_html(row[2]),
-                    provider=self.name,
-                    rank=index + 1,
-                )
-            )
+            hits.append(SearchHit(_strip_html(row[1]), urllib.parse.unquote(url), _strip_html(row[2]), self.name, index + 1))
         return hits
 
 
@@ -127,10 +196,21 @@ def make_search_provider(provider: str = "auto") -> SearchProvider | None:
     provider = provider.lower()
     bing_key = os.getenv("BING_SEARCH_API_KEY") or os.getenv("AZURE_BING_SEARCH_KEY")
     serper_key = os.getenv("SERPER_API_KEY")
+    brave_key = os.getenv("BRAVE_SEARCH_API_KEY")
+    tavily_key = os.getenv("TAVILY_API_KEY")
+
     if provider in {"auto", "bing"} and bing_key:
         return BingSearchProvider(bing_key)
+    if provider in {"auto", "brave"} and brave_key:
+        return BraveSearchProvider(brave_key)
+    if provider in {"auto", "tavily"} and tavily_key:
+        return TavilySearchProvider(tavily_key)
     if provider in {"auto", "serper"} and serper_key:
         return SerperSearchProvider(serper_key)
+    if provider == "baidu_html":
+        return BaiduHtmlProvider()
+    if provider == "bing_html":
+        return BingHtmlProvider()
     if provider in {"auto", "duckduckgo"}:
         return DuckDuckGoHtmlProvider()
     return None
@@ -203,11 +283,8 @@ def collect_search_items(
 
 
 def fetch_page_text(url: str, max_chars: int = 6000) -> str:
-    request = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 WallBreaker/0.1"})
     try:
-        with urllib.request.urlopen(request, timeout=20) as response:
-            content_type = response.headers.get("Content-Type", "")
-            raw = response.read(1_000_000)
+        raw, content_type = _request_bytes(url, timeout=20)
     except (urllib.error.URLError, TimeoutError, OSError):
         return ""
     if "text/html" not in content_type and "text/plain" not in content_type:
@@ -215,6 +292,23 @@ def fetch_page_text(url: str, max_chars: int = 6000) -> str:
     text = raw.decode(_guess_encoding(content_type), errors="replace")
     text = _strip_html(text)
     return text[:max_chars]
+
+
+def _request_text(url: str, timeout: int) -> str:
+    raw, content_type = _request_bytes(url, timeout)
+    return raw.decode(_guess_encoding(content_type), errors="replace")
+
+
+def _request_bytes(url: str, timeout: int) -> tuple[bytes, str]:
+    request = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 WallBreaker/0.1",
+            "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.5",
+        },
+    )
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        return response.read(1_000_000), response.headers.get("Content-Type", "")
 
 
 def _guess_encoding(content_type: str) -> str:
