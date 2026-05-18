@@ -31,6 +31,7 @@ class PipelineTest(unittest.TestCase):
                 self.assertEqual(timeline, [])
                 self.assertIn("研究缺口清单", script)
                 self.assertEqual(report["raw_items"], 5)
+                self.assertEqual(report["ingestion_mode"], "mock")
         finally:
             if old_value is None:
                 os.environ.pop("WALLBREAKER_USE_MOCK_LLM", None)

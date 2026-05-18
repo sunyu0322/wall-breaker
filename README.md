@@ -88,3 +88,37 @@ python -m wallbreaker.cli run "oppo母亲节文案塌房事件" --source-file so
 ```
 
 多条材料用单独一行 `---` 分隔。详见 `docs/PRD-v4.1-prompt-and-evidence.md`。
+
+## 自动检索
+
+项目支持通过搜索 API 自动还原事件事实骨架。推荐先配置 Bing Web Search API 或 Serper：
+
+```text
+BING_SEARCH_API_KEY=你的 Bing Search Key
+# 或
+SERPER_API_KEY=你的 Serper Key
+```
+
+运行：
+
+```powershell
+python -m wallbreaker.cli run "oppo母亲节文案塌房事件" --real-search --per-source-limit 3
+```
+
+系统会自动检索：
+
+- 全网事实骨架：原文、回应、争议、时间线
+- 新闻报道：媒体报道、道歉、回应
+- 公众号：`site:mp.weixin.qq.com`
+- 知乎：`site:zhihu.com`
+- 微博：`site:weibo.com`
+- B站：`site:bilibili.com`
+- 小红书：`site:xiaohongshu.com`
+
+如果希望尝试抓取搜索结果页面正文，可加：
+
+```powershell
+python -m wallbreaker.cli run "oppo母亲节文案塌房事件" --real-search --fetch-pages
+```
+
+注意：微博、小红书、B站很多页面需要登录或动态加载，MVP 会先保存搜索标题、摘要、链接和可访问页面正文。后续版本会加入 Playwright 登录态深爬与截图 OCR。

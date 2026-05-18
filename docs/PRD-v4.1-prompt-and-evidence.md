@@ -145,7 +145,32 @@ python -m wallbreaker.cli run "oppo母亲节文案塌房事件" --source-file so
 
 ## 8. 后续路线
 
-1. 接入真实搜索 API，替代 mock source。
-2. 增加 Playwright 截图和 OCR 入库。
-3. 增加 Web UI，让用户先确认事件档案，再进入文案生成。
-4. 将视觉匹配延后到人工确认 script.md 之后。
+1. 已接入搜索 API 适配层：Bing、Serper、DuckDuckGo HTML fallback。
+2. 当前自动检索采用站点定向查询，还原事实骨架和多平台舆论切片。
+3. 下一步增加 Playwright 登录态深爬、截图和 OCR 入库。
+4. 增加 Web UI，让用户先确认事件档案，再进入文案生成。
+5. 将视觉匹配延后到人工确认 script.md 之后。
+
+## 9. 自动检索策略
+
+MVP 阶段不直接承诺突破各平台反爬，而是先通过搜索 API 做多源覆盖：
+
+- `事实骨架`: `事件关键词 + 原文 + 回应 + 争议 + 时间线`
+- `新闻`: `事件关键词 + 媒体报道 + 回应 + 道歉`
+- `公众号`: `site:mp.weixin.qq.com`
+- `知乎`: `site:zhihu.com`
+- `微博`: `site:weibo.com`
+- `B站`: `site:bilibili.com`
+- `小红书`: `site:xiaohongshu.com`
+
+每条搜索结果必须原样入库：
+
+- 搜索查询词
+- 标题
+- 摘要
+- URL
+- 可访问页面正文摘录
+- 检索 provider
+- 排名
+
+搜索结果不是最终事实，只是事实研究的入口。Reasoner 仍必须区分“搜索摘要”“原始材料”“媒体报道”“舆论评论”。

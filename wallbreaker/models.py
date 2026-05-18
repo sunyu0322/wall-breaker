@@ -27,7 +27,12 @@ class RawItem:
 
     @property
     def is_placeholder(self) -> bool:
-        return bool(self.metadata.get("mock")) or (self.url or "").startswith("https://example.invalid")
+        return (
+            bool(self.metadata.get("mock"))
+            or bool(self.metadata.get("error"))
+            or self.source.startswith("search_error:")
+            or (self.url or "").startswith("https://example.invalid")
+        )
 
 
 @dataclass(slots=True)

@@ -23,6 +23,8 @@ class Settings:
     reasoner_model: str
     writer_model: str
     use_mock_llm: str
+    search_provider: str
+    search_fetch_pages: bool
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -33,6 +35,9 @@ class Settings:
             reasoner_model=os.getenv("DEEPSEEK_REASONER_MODEL", "deepseek-ai/DeepSeek-R1"),
             writer_model=os.getenv("DEEPSEEK_WRITER_MODEL", "deepseek-ai/DeepSeek-V3"),
             use_mock_llm=os.getenv("WALLBREAKER_USE_MOCK_LLM", "auto").lower(),
+            search_provider=os.getenv("WALLBREAKER_SEARCH_PROVIDER", "auto"),
+            search_fetch_pages=os.getenv("WALLBREAKER_SEARCH_FETCH_PAGES", "false").lower()
+            in {"1", "true", "yes", "on"},
         )
 
     @property
