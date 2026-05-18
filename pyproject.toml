@@ -1,0 +1,14 @@
+[project]
+name = "wallbreaker"
+version = "0.1.0"
+description = "Wall-Breaker deep content automation MVP"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
