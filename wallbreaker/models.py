@@ -25,6 +25,10 @@ class RawItem:
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
+    @property
+    def is_placeholder(self) -> bool:
+        return bool(self.metadata.get("mock")) or (self.url or "").startswith("https://example.invalid")
+
 
 @dataclass(slots=True)
 class EvidenceAnchor:
@@ -49,4 +53,3 @@ class VisualCue:
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
-

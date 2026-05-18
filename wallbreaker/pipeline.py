@@ -5,7 +5,7 @@ from datetime import datetime
 from pathlib import Path
 
 from wallbreaker.config import Settings
-from wallbreaker.ingestion import collect_raw_items
+from wallbreaker.ingestion import collect_from_source_file, collect_raw_items
 from wallbreaker.llm import MockLlmClient, SiliconFlowClient
 from wallbreaker.scripting import generate_analysis, generate_script
 from wallbreaker.storage import JsonlRawStore
@@ -20,13 +20,21 @@ def make_client(settings: Settings):
     return SiliconFlowClient(settings.siliconflow_api_key, settings.siliconflow_base_url)
 
 
-def run_pipeline(query: str, output_root: Path = Path("runs"), per_source_limit: int = 3) -> dict:
+def run_pipeline(
+    query: str,
+    output_root: Path = Path("runs"),
+    per_source_limit: int = 3,
+    source_file: Path | None = None,
+) -> dict:
     settings = Settings.from_env()
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     run_dir = output_root / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
 
-    items = collect_raw_items(query, per_source_limit=per_source_limit)
+    if source_file:
+        items = collect_from_source_file(source_file, query)
+    else:
+        items = collect_raw_items(query, per_source_limit=per_source_limit)
     raw_store = JsonlRawStore(run_dir / "raw_items.jsonl")
     raw_store.append_many(items)
 
@@ -46,6 +54,7 @@ def run_pipeline(query: str, output_root: Path = Path("runs"), per_source_limit:
         "run_id": run_id,
         "run_dir": str(run_dir),
         "mock_llm": settings.should_mock_llm,
+        "analysis_status": analysis.get("status", "unknown"),
         "raw_items": len(items),
         "visual_cues": len(timeline),
         "files": {
@@ -57,4 +66,3 @@ def run_pipeline(query: str, output_root: Path = Path("runs"), per_source_limit:
     }
     (run_dir / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     return report
-

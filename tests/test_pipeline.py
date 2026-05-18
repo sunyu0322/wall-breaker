@@ -24,8 +24,12 @@ class PipelineTest(unittest.TestCase):
                 self.assertTrue((run_dir / "script.md").exists())
                 self.assertTrue((run_dir / "visual_timeline.json").exists())
 
+                analysis = json.loads((run_dir / "analysis.json").read_text(encoding="utf-8"))
                 timeline = json.loads((run_dir / "visual_timeline.json").read_text(encoding="utf-8"))
-                self.assertTrue(timeline)
+                script = (run_dir / "script.md").read_text(encoding="utf-8")
+                self.assertEqual(analysis["status"], "insufficient_evidence")
+                self.assertEqual(timeline, [])
+                self.assertIn("研究缺口清单", script)
                 self.assertEqual(report["raw_items"], 5)
         finally:
             if old_value is None:
@@ -36,4 +40,3 @@ class PipelineTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Protocol
 
 from wallbreaker.models import RawItem
@@ -53,3 +54,20 @@ def collect_raw_items(query: str, per_source_limit: int = 3) -> list[RawItem]:
         items.extend(source.collect(query, per_source_limit))
     return items
 
+
+def collect_from_source_file(path: Path, query: str) -> list[RawItem]:
+    text = path.read_text(encoding="utf-8-sig")
+    chunks = [chunk.strip() for chunk in text.split("\n---\n") if chunk.strip()]
+    if not chunks and text.strip():
+        chunks = [text.strip()]
+    return [
+        RawItem(
+            source="local_source_file",
+            query=query,
+            title=f"{path.name} #{index + 1}",
+            raw_text=chunk,
+            url=str(path),
+            metadata={"local_file": True, "chunk": index + 1},
+        )
+        for index, chunk in enumerate(chunks)
+    ]

@@ -15,6 +15,7 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("query", help="热点关键词、事件名或 URL")
     run.add_argument("--output", default="runs", help="输出目录")
     run.add_argument("--per-source-limit", type=int, default=3, help="每个 source 采集条数")
+    run.add_argument("--source-file", help="本地真实材料文件。用 --- 分隔多条素材。")
     return parser
 
 
@@ -22,10 +23,14 @@ def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
     if args.command == "run":
-        report = run_pipeline(args.query, output_root=Path(args.output), per_source_limit=args.per_source_limit)
+        report = run_pipeline(
+            args.query,
+            output_root=Path(args.output),
+            per_source_limit=args.per_source_limit,
+            source_file=Path(args.source_file) if args.source_file else None,
+        )
         print(json.dumps(report, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":
     main()
-

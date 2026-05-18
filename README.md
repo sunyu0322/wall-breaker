@@ -74,3 +74,15 @@ tests/
 - **可替换采集器**：MVP 内置模拟源与通用搜索源接口，真实 API/Playwright 可以按 source adapter 接入。
 - **证据优先**：文案生成后再做视觉匹配，避免“为了配图而写字”。
 - **平台语境转化器**：文案 prompt 内置安全表达要求，保留逻辑锐度但降低具体指名风险。
+
+## v4.1 证据闸门
+
+当前 mock 采集源不能支撑真实事件研究。系统现在会在证据不足时生成“研究缺口清单”，不会硬写正式文案。
+
+如果你已经整理了真实材料，可以用 `--source-file` 输入：
+
+```powershell
+python -m wallbreaker.cli run "oppo母亲节文案塌房事件" --source-file sources/oppo-mothers-day.txt
+```
+
+多条材料用单独一行 `---` 分隔。详见 `docs/PRD-v4.1-prompt-and-evidence.md`。
