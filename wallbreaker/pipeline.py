@@ -34,6 +34,7 @@ def run_pipeline(
     search_provider: str | None = None,
     fetch_pages: bool | None = None,
     evidence_mode: str = "basic",
+    target_length: str = "10分钟左右，约2800-3400个中文汉字",
 ) -> dict:
     settings = Settings.from_env()
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -99,7 +100,7 @@ def run_pipeline(
 
     client = make_client(settings)
     analysis = generate_analysis(client, settings.reasoner_model, query, items, evidence_mode=evidence_mode)
-    script = generate_script(client, settings.writer_model, query, analysis, items)
+    script = generate_script(client, settings.writer_model, query, analysis, items, target_length=target_length)
     timeline = build_visual_timeline(script, items)
 
     (run_dir / "analysis.json").write_text(json.dumps(analysis, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -115,6 +116,7 @@ def run_pipeline(
         "mock_llm": settings.should_mock_llm,
         "ingestion_mode": "+".join(dict.fromkeys(ingestion_modes)),
         "evidence_mode": evidence_mode,
+        "target_length": target_length,
         "analysis_status": analysis.get("status", "unknown"),
         "raw_items": len(items),
         "visual_cues": len(timeline),

@@ -68,7 +68,14 @@ def generate_analysis(
     return analysis
 
 
-def generate_script(client: LlmClient, model: str, query: str, analysis: dict, items: list[RawItem]) -> str:
+def generate_script(
+    client: LlmClient,
+    model: str,
+    query: str,
+    analysis: dict,
+    items: list[RawItem],
+    target_length: str = "10分钟左右，约2800-3400个中文汉字",
+) -> str:
     if analysis.get("status") == "insufficient_evidence":
         gaps = "\n".join(f"- {gap}" for gap in analysis.get("research_gaps", []))
         outline = "\n".join(f"- {step}" for step in analysis.get("outline", []))
@@ -86,7 +93,8 @@ def generate_script(client: LlmClient, model: str, query: str, analysis: dict, i
             "query": query,
             "analysis": analysis,
             "raw_items": [item.to_dict() for item in items],
-            "target_length": "basic 模式 1200-2000 字；standard 模式 2500-3500 字；strict 模式可更长。",
+            "target_length": target_length,
+            "length_policy": "basic 模式也尽量写成完整口播稿，只降低断言强度，不缩成短评。不要用提纲、列表或摘要替代正文。",
         },
         ensure_ascii=False,
         indent=2,

@@ -28,6 +28,7 @@ def build_parser() -> argparse.ArgumentParser:
         default="basic",
         help="证据门槛：basic 可基于少量可信材料写简单稿；standard 需要较完整事件档案；strict 要求强证据链。",
     )
+    run.add_argument("--target-length", default="10分钟左右，约2800-3400个中文汉字", help="目标文案长度描述。")
     return parser
 
 
@@ -47,6 +48,7 @@ def main() -> None:
             search_provider=args.search_provider,
             fetch_pages=args.fetch_pages,
             evidence_mode=args.evidence_mode,
+            target_length=args.target_length,
         )
         print(json.dumps(report, ensure_ascii=False, indent=2))
 
