@@ -21,7 +21,7 @@ class MockSource:
 
     def collect(self, query: str, limit: int) -> list[RawItem]:
         examples = [
-            f"关于{query}，有人说这只是个别现象，但评论区一直在追问：为什么每次代价都落到普通人身上？！！",
+            f"关于{query}，有人说这只是个别现象，但评论区一直在追问：为什么每次代价都落到普通人身上？",
             f"{query}的争议点不在表面冲突，而在规则制定者把成本外包给沉默的人，然后要求他们保持体面。",
             f"一位亲历者写道：我不想被总结成宏大叙事里的一个数字，我只是觉得那一刻特别无力。",
         ]
@@ -56,18 +56,21 @@ def collect_raw_items(query: str, per_source_limit: int = 3) -> list[RawItem]:
 
 
 def collect_from_source_file(path: Path, query: str) -> list[RawItem]:
-    text = path.read_text(encoding="utf-8-sig")
+    return collect_from_text(path.read_text(encoding="utf-8-sig"), query, source="local_source_file", title_prefix=path.name, url=str(path))
+
+
+def collect_from_text(text: str, query: str, source: str = "manual_text", title_prefix: str = "manual", url: str | None = None) -> list[RawItem]:
     chunks = [chunk.strip() for chunk in text.split("\n---\n") if chunk.strip()]
     if not chunks and text.strip():
         chunks = [text.strip()]
     return [
         RawItem(
-            source="local_source_file",
+            source=source,
             query=query,
-            title=f"{path.name} #{index + 1}",
+            title=f"{title_prefix} #{index + 1}",
             raw_text=chunk,
-            url=str(path),
-            metadata={"local_file": True, "chunk": index + 1},
+            url=url,
+            metadata={"manual": source == "manual_text", "chunk": index + 1},
         )
         for index, chunk in enumerate(chunks)
     ]

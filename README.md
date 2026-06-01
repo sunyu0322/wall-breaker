@@ -123,6 +123,42 @@ python -m wallbreaker.cli run "oppo母亲节文案塌房事件" --real-search --
 
 HTML 后备可能被搜索引擎风控，稳定性不如 API。
 
+## 人工补充资料
+
+你可以把自动检索和人工材料一起使用。默认 `--evidence-mode basic`，也就是只要有百科、媒体报道、官方页面或你粘贴的可信材料，就允许生成“简单版文案”，模型会自行降低断言强度。
+
+直接粘贴一段资料：
+
+```powershell
+python -m wallbreaker.cli run "oppo母亲节文案塌房事件" --source-text "这里粘贴百度百科、报道摘录或你整理的背景资料"
+```
+
+从剪贴板读取资料：
+
+```powershell
+python -m wallbreaker.cli run "oppo母亲节文案塌房事件" --source-clipboard
+```
+
+提供一个或多个原文链接：
+
+```powershell
+python -m wallbreaker.cli run "oppo母亲节文案塌房事件" --source-url "https://example.com/article"
+```
+
+自动检索 + 你的资料 + 原文链接一起使用：
+
+```powershell
+python -m wallbreaker.cli run "oppo母亲节文案塌房事件" --real-search --search-provider baidu_html --source-url "https://baike.baidu.com/item/..." --source-clipboard
+```
+
+证据模式：
+
+```text
+basic    少量可信公开材料即可写简单版，默认值
+standard 需要较完整事件档案
+strict   调查型深稿，要求强证据链
+```
+
 系统会自动检索：
 
 - 全网事实骨架：原文、回应、争议、时间线
